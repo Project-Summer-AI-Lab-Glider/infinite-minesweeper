@@ -1,0 +1,16 @@
+{
+  "name": "infinite-minesweeper",
+  "version": "1.0.0",
+  "description": "Infinite Minesweeper",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+  },
+  "author": "Project Summer. AI Lab & Glider",
+  "license": "ISC",
+  "dependencies": {
+    "bootstrap": "^4.5.0",
+    "p5": "^1.1.9"
+  },
+  "devDependencies": {}
+}
