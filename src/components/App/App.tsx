@@ -12,7 +12,10 @@ function App() {
       <div className="row">
         <div className="col" />
 
-        <div className="col canvas d-flex justify-content-center">
+        <div
+          className="col canvas d-flex justify-content-center"
+          style={{ borderColor: "red", border: "solid" }}
+        >
           <GameBoard />
         </div>
 

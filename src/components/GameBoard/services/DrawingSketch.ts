@@ -1,4 +1,8 @@
 import p5 from "p5";
+import {
+  calculateDirectionCoefficients,
+  calculateGridVectorsEnds,
+} from "./DrawingCalculations";
 
 const drawingSketch = (p: p5) => {
   let mode = 1;
@@ -6,6 +10,38 @@ const drawingSketch = (p: p5) => {
     const canvas = p.createCanvas(400, 400);
     canvas.parent("canvas");
     p.rectMode(p.CENTER);
+
+    p.translate(p.width / 2, p.height / 2);
+    p.stroke("red");
+    // p.point(0, 0);
+    // p.rotate(p.PI / 2.0);
+
+    const gridVectorsEnds = calculateGridVectorsEnds();
+    const noises = [-20, 50, 10, -60, 20];
+    const gridColors = ["red", "blue", "cyan", "lime", "orange"];
+    const directionCoefficients = calculateDirectionCoefficients(
+      gridVectorsEnds
+    );
+    const space = 50;
+
+    // TODO cover whole canvas
+    const xStart = -500 * 0.5; // p.width
+    const xEnd = 500 * 0.5;
+
+    directionCoefficients.forEach((directionCoefficient, index) => {
+      const b = space * Math.sqrt(1 + Math.pow(directionCoefficient, 2));
+
+      // TODO cover whole canvas
+      for (let j = -5; j < 6; j++) {
+        p.stroke(gridColors[index]);
+        p.line(
+          xStart + noises[index],
+          xStart * directionCoefficient + j * b + noises[index],
+          xEnd + noises[index],
+          xEnd * directionCoefficient + j * b + noises[index]
+        );
+      }
+    });
   };
 
   p.draw = () => {
