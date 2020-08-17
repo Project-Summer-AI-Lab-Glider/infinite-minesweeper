@@ -13,11 +13,11 @@ const drawingSketch = (p: p5) => {
 
     p.translate(p.width / 2, p.height / 2);
     p.stroke("red");
-    // p.point(0, 0);
+    p.point(0, 0); // TODO remove
     // p.rotate(p.PI / 2.0);
 
     const gridVectorsEnds = calculateGridVectorsEnds();
-    const noises = [-20, 50, 10, -60, 20];
+    const offsets = [-20, 50, 10, -60, 20];
     const gridColors = ["red", "blue", "cyan", "lime", "orange"];
     const directionCoefficients = calculateDirectionCoefficients(
       gridVectorsEnds
@@ -35,13 +35,45 @@ const drawingSketch = (p: p5) => {
       for (let j = -5; j < 6; j++) {
         p.stroke(gridColors[index]);
         p.line(
-          xStart + noises[index],
-          xStart * directionCoefficient + j * b + noises[index],
-          xEnd + noises[index],
-          xEnd * directionCoefficient + j * b + noises[index]
+          xStart + offsets[index],
+          xStart * directionCoefficient + j * b + offsets[index],
+          xEnd + offsets[index],
+          xEnd * directionCoefficient + j * b + offsets[index]
         );
       }
     });
+
+    /////////////////////////////////////////
+
+    // TODO iterate over all functions
+    const b1 = space * Math.sqrt(1 + Math.pow(directionCoefficients[1], 2));
+    const b2 = space * Math.sqrt(1 + Math.pow(directionCoefficients[2], 2));
+
+    const intersectionX =
+      (b2 -
+        b1 +
+        offsets[2] -
+        offsets[1] +
+        directionCoefficients[1] * offsets[1] -
+        directionCoefficients[2] * offsets[2]) /
+      (directionCoefficients[1] - directionCoefficients[2]);
+    const intersectionY =
+      directionCoefficients[1] * (intersectionX - offsets[1]) + b1 + offsets[1];
+
+    p.stroke("purple");
+    p.strokeWeight(4);
+    p.point(intersectionX, intersectionY);
+
+    ///////////////////////////////////////////
+
+    const tan =
+      (directionCoefficients[1] - directionCoefficients[2]) /
+      (1 + directionCoefficients[1] * directionCoefficients[2]);
+
+    if (Math.round(Math.abs(tan) * 10000) / 10000 === 3.0777) {
+      // angle 72
+      drawDiamond(intersectionX, intersectionY, 4, 72);
+    }
   };
 
   p.draw = () => {
@@ -49,28 +81,15 @@ const drawingSketch = (p: p5) => {
       if (mode === 1) {
         drawDiamond(p.mouseX, p.mouseY, 50, 36);
         p.fill("blue");
-      } else {
-        p.translate(p.mouseX, p.mouseY);
-        p.rotate(p.PI / 8);
-        drawDiamond(0, 0, 50, 72);
-        p.fill("green");
       }
     }
   };
 
-  p.keyPressed = () => {
-    if (p.keyCode === p.LEFT_ARROW) {
-      mode = 1;
-    } else if (p.keyCode === p.RIGHT_ARROW) {
-      mode = 2;
-    }
-  };
-
-  function drawDiamond(x: any, noises: any, size: any, angle: any) {
+  function drawDiamond(x: any, y: any, size: any, angle: any) {
     // d is equal to the half of the diagonal
     const d1 = size * Math.sin(angle * 0.5);
     const d2 = size * Math.cos(angle * 0.5);
-    p.quad(x, noises - d1, x + d2, noises, x, noises + d1, x - d2, noises);
+    p.quad(x, y - d1, x + d2, y, x, y + d1, x - d2, y);
   }
 };
 
