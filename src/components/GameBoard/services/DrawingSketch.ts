@@ -1,8 +1,10 @@
 import p5 from "p5";
 import {
+  calculateDiamondAngle,
   calculateDirectionCoefficients,
   calculateGridVectorsEnds,
 } from "./DrawingCalculations";
+import { Point } from "../models/Point";
 
 const drawingSketch = (p: p5) => {
   let mode = 1;
@@ -27,12 +29,23 @@ const drawingSketch = (p: p5) => {
     // TODO cover whole canvas
     const xStart = -500 * 0.5; // p.width
     const xEnd = 500 * 0.5;
+    const functions: any[][] = [];
+
+    //////////////////////////////////////////
 
     directionCoefficients.forEach((directionCoefficient, index) => {
       const b = space * Math.sqrt(1 + Math.pow(directionCoefficient, 2));
+      functions.push([]);
 
       // TODO cover whole canvas
       for (let j = -5; j < 6; j++) {
+        functions[index].push({
+          a: directionCoefficient,
+          b: b + offsets[index],
+          xTranslation: offsets[index],
+          yTranslation: j * b + offsets[index],
+        });
+
         p.stroke(gridColors[index]);
         p.line(
           xStart + offsets[index],
@@ -44,52 +57,91 @@ const drawingSketch = (p: p5) => {
     });
 
     /////////////////////////////////////////
+    //          Intersections              //
+    /////////////////////////////////////////
+    const intersections: any = [];
 
-    // TODO iterate over all functions
-    const b1 = space * Math.sqrt(1 + Math.pow(directionCoefficients[1], 2));
-    const b2 = space * Math.sqrt(1 + Math.pow(directionCoefficients[2], 2));
+    functions.forEach((fSet1, index1) => {
+      fSet1.forEach((f1, i) => {
+        functions.forEach((fSet2, index2) => {
+          fSet2.forEach((f2, j) => {
+            const b1 =
+              space * Math.sqrt(1 + Math.pow(directionCoefficients[index1], 2));
+            const b2 =
+              space * Math.sqrt(1 + Math.pow(directionCoefficients[index2], 2));
 
-    const intersectionX =
-      (b2 -
-        b1 +
-        offsets[2] -
-        offsets[1] +
-        directionCoefficients[1] * offsets[1] -
-        directionCoefficients[2] * offsets[2]) /
-      (directionCoefficients[1] - directionCoefficients[2]);
-    const intersectionY =
-      directionCoefficients[1] * (intersectionX - offsets[1]) + b1 + offsets[1];
+            let intersectionX =
+              (b2 -
+                b1 +
+                f2.yTranslation -
+                f1.yTranslation +
+                directionCoefficients[index1] * f1.xTranslation -
+                directionCoefficients[index2] * f2.xTranslation) /
+              (directionCoefficients[index1] - directionCoefficients[index2]);
+            let intersectionY =
+              directionCoefficients[index1] *
+                (intersectionX - f1.xTranslation) +
+              b1 +
+              f1.yTranslation;
 
-    p.stroke("purple");
-    p.strokeWeight(4);
-    p.point(intersectionX, intersectionY);
+            const angle = calculateDiamondAngle(
+              directionCoefficients[index1],
+              directionCoefficients[index2]
+            );
 
-    ///////////////////////////////////////////
+            const precision = 10000;
+            intersectionX = Math.round(intersectionX * precision) / precision;
+            intersectionY = Math.round(intersectionY * precision) / precision;
 
-    const tan =
-      (directionCoefficients[1] - directionCoefficients[2]) /
-      (1 + directionCoefficients[1] * directionCoefficients[2]);
+            if (
+              intersections.find(
+                (x: any) => x.x === intersectionX && x.y === intersectionY
+              )
+            ) {
+              return;
+            }
 
-    if (Math.round(Math.abs(tan) * 10000) / 10000 === 3.0777) {
-      // angle 72
-      drawDiamond(intersectionX, intersectionY, 4, 72);
-    }
+            intersections.push({
+              x: intersectionX,
+              y: intersectionY,
+              diamondAngle: angle,
+              f1: f1,
+              f2: f2,
+            });
+
+            // TODO Draw intersections
+            // p.stroke("purple");
+            // p.strokeWeight(4);
+            // p.point(intersectionX, intersectionY);
+          });
+        });
+      });
+    });
+
+    /////////////////////////////////////////////////
+
+    // Draw diamonds
+    intersections.forEach((i: any) => {
+      drawDiamond(i.x, i.y, 6, 180 - i.diamondAngle, 0);
+    });
   };
 
-  p.draw = () => {
-    if (p.mouseIsPressed) {
-      if (mode === 1) {
-        drawDiamond(p.mouseX, p.mouseY, 50, 36);
-        p.fill("blue");
-      }
-    }
-  };
+  function drawDiamond(
+    x: any,
+    y: any,
+    size: any,
+    angle: any,
+    rotation: number
+  ) {
+    const d1 = 2 * size * Math.cos(angle * 0.5); // longer
+    const d2 = 2 * size * Math.sin(angle * 0.5);
 
-  function drawDiamond(x: any, y: any, size: any, angle: any) {
-    // d is equal to the half of the diagonal
-    const d1 = size * Math.sin(angle * 0.5);
-    const d2 = size * Math.cos(angle * 0.5);
-    p.quad(x, y - d1, x + d2, y, x, y + d1, x - d2, y);
+    p.push();
+    p.translate(x, y);
+    p.rotate(rotation);
+    p.translate(-x, -y);
+    p.quad(x, y - d1 * 0.5, x + d2 * 0.5, y, x, y + d1 * 0.5, x - d2 * 0.5, y);
+    p.pop();
   }
 };
 

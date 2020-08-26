@@ -21,4 +21,18 @@ function calculateDirectionCoefficients(vectorsEnds: Point[]): number[] {
   return directionCoefficients;
 }
 
-export { calculateGridVectorsEnds, calculateDirectionCoefficients };
+/**
+ * @param a1 f1 direction coefficient
+ * @param a2 f2 direction coefficient
+ * @return angle between two linear functions
+ */
+function calculateDiamondAngle(a1: number, a2: number): number {
+  const tan = Math.abs((a1 - a2) / (1 + a1 * a2));
+  return (Math.atan(tan) * 180) / Math.PI;
+}
+
+export {
+  calculateGridVectorsEnds,
+  calculateDirectionCoefficients,
+  calculateDiamondAngle,
+};
