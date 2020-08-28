@@ -12,13 +12,13 @@ function calculateGridVectorsEnds(): Point[] {
   return vectors;
 }
 
-function calculateDirectionCoefficients(vectorsEnds: Point[]): number[] {
-  const directionCoefficients: number[] = [];
+function calculateGirdSlopes(vectorsEnds: Point[]): number[] {
+  const gridSlopes: number[] = [];
   vectorsEnds.forEach((vector) => {
-    directionCoefficients.push(vector.y / vector.x);
+    gridSlopes.push(vector.y / vector.x);
   });
 
-  return directionCoefficients;
+  return gridSlopes;
 }
 
 /**
@@ -31,8 +31,4 @@ function calculateDiamondAngle(a1: number, a2: number): number {
   return (Math.atan(tan) * 180) / Math.PI;
 }
 
-export {
-  calculateGridVectorsEnds,
-  calculateDirectionCoefficients,
-  calculateDiamondAngle,
-};
+export { calculateGridVectorsEnds, calculateGirdSlopes, calculateDiamondAngle };
