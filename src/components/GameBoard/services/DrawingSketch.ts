@@ -4,10 +4,12 @@ import {
   calculateGirdSlopes,
   calculateGridVectorsEnds,
 } from "./DrawingCalculations";
-import { LinearFunction } from "./LinearFunction";
+import { LinearFunction } from "../models/LinearFunction";
+import { Point } from "../models/Point";
 
 const drawingSketch = (p: p5) => {
   p.setup = () => {
+    const sideSize = 10;
     const canvas = p.createCanvas(400, 400);
     canvas.parent("canvas");
     p.rectMode(p.CENTER);
@@ -58,10 +60,16 @@ const drawingSketch = (p: p5) => {
     /////////////////////////////////////////
     const intersections: any = [];
 
-    functions.forEach((fSet1) => {
-      fSet1.forEach((f1) => {
-        functions.forEach((fSet2) => {
-          fSet2.forEach((f2) => {
+    let i = 0;
+    functions.forEach((fSet1, i1) => {
+      fSet1.forEach((f1, i3) => {
+        // period
+        functions.forEach((fSet2, i2) => {
+          if (i1 === i2) {
+            return;
+          }
+          fSet2.forEach((f2, i4) => {
+            // period
             const b1 = space * Math.sqrt(1 + Math.pow(f1.a, 2));
             const b2 = space * Math.sqrt(1 + Math.pow(f2.a, 2));
 
@@ -82,14 +90,6 @@ const drawingSketch = (p: p5) => {
             intersectionX = Math.round(intersectionX * precision) / precision;
             intersectionY = Math.round(intersectionY * precision) / precision;
 
-            if (
-              intersections.find(
-                (x: any) => x.x === intersectionX && x.y === intersectionY
-              )
-            ) {
-              return;
-            }
-
             if (intersectionX < -p.width / 2 || intersectionX > p.width / 2) {
               return;
             }
@@ -98,7 +98,17 @@ const drawingSketch = (p: p5) => {
               return;
             }
 
+            const existingIntersection = intersections.find(
+              (x: any) => x.x === intersectionX && x.y === intersectionY
+            );
+
+            if (existingIntersection) {
+              return;
+            }
+
+            i++;
             intersections.push({
+              id: i,
               x: intersectionX,
               y: intersectionY,
               diamondAngle: angle,
@@ -112,6 +122,13 @@ const drawingSketch = (p: p5) => {
             // p.strokeWeight(4);
             // p.point(intersectionX, intersectionY);
             // p.pop();
+            //
+            // p.push();
+            // p.stroke("black");
+            // p.strokeWeight(0.1);
+            // p.textSize(4);
+            // p.text(i, intersectionX, intersectionY);
+            // p.pop();
           });
         });
       });
@@ -120,9 +137,9 @@ const drawingSketch = (p: p5) => {
     /////////////////////////////////////////////////
 
     // Draw diamonds
-    intersections.forEach((i: any) => {
-      if (i.diamondAngle === 0) {
-        // TODO
+    const graphNodes: any[] = [];
+    intersections.forEach((i: any, index: number) => {
+      if (isNaN(i.x) || isNaN(i.y)) {
         return;
       }
 
@@ -151,9 +168,10 @@ const drawingSketch = (p: p5) => {
 
       v1.normalize();
 
-      const size = 10;
-      const d1 = 2 * size * Math.cos(((i.diamondAngle * Math.PI) / 180) * 0.5); // longer
-      const d2 = 2 * size * Math.sin(((i.diamondAngle * Math.PI) / 180) * 0.5);
+      const d1 =
+        2 * sideSize * Math.cos(((i.diamondAngle * Math.PI) / 180) * 0.5); // longer
+      const d2 =
+        2 * sideSize * Math.sin(((i.diamondAngle * Math.PI) / 180) * 0.5);
 
       const p1 = {
         x: i.x,
@@ -183,6 +201,7 @@ const drawingSketch = (p: p5) => {
         mul2 = d2 * 0.5;
       }
 
+      // TODO use vectors
       const newA = -1 / f1.a;
       const f2 = LinearFunction.createFromSlopeAndPoint(newA, i);
       const v3 = p.createVector(xT, f2.evaluate(i.x + xT) - i.y);
@@ -190,24 +209,208 @@ const drawingSketch = (p: p5) => {
       v3.mult(mul2);
       v1.mult(mul);
 
-      const points = [];
-      points.push({ x: i.x + v1.x, y: i.y + v1.y });
-      points.push({ x: i.x + v3.x, y: i.y + v3.y });
-      points.push({ x: i.x - v1.x, y: i.y - v1.y });
-      points.push({ x: i.x - v3.x, y: i.y - v3.y });
+      const diamondVertices = [];
+      diamondVertices.push({ x: i.x + v1.x, y: i.y + v1.y });
+      diamondVertices.push({ x: i.x + v3.x, y: i.y + v3.y });
+      diamondVertices.push({ x: i.x - v1.x, y: i.y - v1.y });
+      diamondVertices.push({ x: i.x - v3.x, y: i.y - v3.y });
+
+      graphNodes.push({
+        id: i.id,
+        intersection: i,
+        center: {
+          x: i.x,
+          y: i.y,
+        },
+        vertices: diamondVertices,
+        connections: [],
+        angle: i.diamondAngle,
+      });
+
+      // TODO Draw diamonds
+      // p.push();
+      // p.stroke("purple");
+      // p.strokeWeight(0.5);
+      // p.quad(
+      //   diamondVertices[0].x,
+      //   diamondVertices[0].y,
+      //   diamondVertices[1].x,
+      //   diamondVertices[1].y,
+      //   diamondVertices[2].x,
+      //   diamondVertices[2].y,
+      //   diamondVertices[3].x,
+      //   diamondVertices[3].y
+      // );
+      // p.pop();
+    });
+
+    ////////////////////////////////////////////
+    //            Connect Nodes               //
+    ////////////////////////////////////////////
+    functions.forEach((fSet, i) => {
+      fSet.forEach((f, j) => {
+        if (i > j) return;
+
+        // TODO
+        const iList = graphNodes.filter(
+          (node: any) =>
+            (node.intersection.f1.a === f.a &&
+              node.intersection.f1.b === f.b &&
+              node.intersection.f1.xTranslation === f.xTranslation &&
+              node.intersection.f1.yTranslation === f.yTranslation) ||
+            (node.intersection.f2.a === f.a &&
+              node.intersection.f2.b === f.b &&
+              node.intersection.f2.xTranslation === f.xTranslation &&
+              node.intersection.f2.yTranslation === f.yTranslation)
+        );
+
+        iList.sort((a: any, b: any) => {
+          if (a.intersection.x < b.intersection.x) {
+            return -1;
+          } else {
+            return 1;
+          }
+        });
+
+        let lastRef = iList.shift();
+        iList.forEach((node) => {
+          lastRef.connections.push({
+            id: node.id,
+          });
+          node.connections.push({
+            id: lastRef.id,
+          });
+          lastRef = node;
+        });
+      });
+    });
+
+    ////////////////////////////////////////////
+    //             Find first element         //
+    ////////////////////////////////////////////
+    const firstElement = graphNodes.reduce((a, b) => {
+      const aLen = p.createVector(a.center.x, a.center.y).mag();
+      const bLen = p.createVector(b.center.x, b.center.y).mag();
+      return aLen < bLen ? a : b;
+    });
+
+    // console.log(firstElement.connections);
+
+    p.push();
+    p.strokeWeight(0.5);
+    p.quad(
+      firstElement.vertices[0].x,
+      firstElement.vertices[0].y,
+      firstElement.vertices[1].x,
+      firstElement.vertices[1].y,
+      firstElement.vertices[2].x,
+      firstElement.vertices[2].y,
+      firstElement.vertices[3].x,
+      firstElement.vertices[3].y
+    );
+    p.pop();
+
+    // TODO translate
+
+    ////////////////////////////////////////////
+    //             Print neighbours           //
+    ////////////////////////////////////////////
+
+    firstElement.connections.forEach((node: any) => {
+      const n = graphNodes.find((e) => e.id === node.id);
+      let diamondVertices = n.vertices;
+
+      const v = p.createVector(
+        n.center.x - firstElement.center.x,
+        n.center.y - firstElement.center.y
+      );
+
+      let distance = v.mag();
+      v.normalize();
+
+      const h1 = sideSize * Math.sin((firstElement.angle * Math.PI) / 180);
+      const h2 = sideSize * Math.sin((n.angle * Math.PI) / 180);
+      distance = distance - h1 * 0.5 - h2 * 0.5;
+
+      v.mult(distance);
+
+      diamondVertices = diamondVertices.map((vertice: any) => {
+        vertice.x = vertice.x - v.x;
+        vertice.y = vertice.y - v.y;
+        return {
+          x: vertice.x,
+          y: vertice.y,
+        };
+      });
+
+      const a: any[] = [];
+      firstElement.vertices.forEach((p1: Point) => {
+        n.vertices.forEach((p2: Point) => {
+          const distance = p.createVector(p2.x - p1.x, p2.y - p1.y).mag();
+          a.push({
+            baseP: p1,
+            nodeP: p2,
+            distance,
+          });
+        });
+      });
+
+      a.sort((a: any, b: any) => {
+        if (a.distance < b.distance) {
+          return -1;
+        } else {
+          return 1;
+        }
+      });
+
+      const xTranslation = a[0].baseP.x - a[0].nodeP.x;
+      const yTranslation = a[0].baseP.y - a[0].nodeP.y;
+
+      let matches = 0;
+      let newPoints = diamondVertices.map((point: Point) => {
+        const newX = point.x + xTranslation;
+        const newY = point.y + yTranslation;
+
+        const match = firstElement.vertices.find((ver: any) => {
+          const z = 10000;
+          return (
+            Math.round(ver.x * z) / z === Math.round(newX * z) / z &&
+            Math.round(ver.y * z) / z === Math.round(newY * z) / z
+          );
+        });
+        if (match) {
+          matches++;
+        }
+
+        return {
+          x: newX,
+          y: newY,
+        };
+      });
+
+      if (matches === 1) {
+        newPoints = diamondVertices.map((point: Point) => {
+          const newX = point.x - xTranslation;
+          const newY = point.y - yTranslation;
+          return {
+            x: newX,
+            y: newY,
+          };
+        });
+      }
 
       p.push();
       p.stroke("purple");
       p.strokeWeight(0.5);
       p.quad(
-        points[0].x,
-        points[0].y,
-        points[1].x,
-        points[1].y,
-        points[2].x,
-        points[2].y,
-        points[3].x,
-        points[3].y
+        newPoints[0].x,
+        newPoints[0].y,
+        newPoints[1].x,
+        newPoints[1].y,
+        newPoints[2].x,
+        newPoints[2].y,
+        newPoints[3].x,
+        newPoints[3].y
       );
       p.pop();
     });
