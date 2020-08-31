@@ -8,6 +8,48 @@ import { LinearFunction } from "../models/LinearFunction";
 import { Point } from "../models/Point";
 
 const drawingSketch = (p: p5) => {
+  function getTranslations(firstElement: any, neighbour: any) {
+    const a: any[] = [];
+    firstElement.vertices.forEach((p1: Point) => {
+      neighbour.vertices.forEach((p2: Point) => {
+        const distance = p.createVector(p2.x - p1.x, p2.y - p1.y).mag();
+        a.push({
+          baseP: p1,
+          nodeP: p2,
+          distance,
+        });
+      });
+    });
+
+    a.sort((a: any, b: any) => {
+      if (a.distance < b.distance) {
+        return -1;
+      } else {
+        return 1;
+      }
+    });
+
+    const xTranslation = a[0].baseP.x - a[0].nodeP.x;
+    const yTranslation = a[0].baseP.y - a[0].nodeP.y;
+    return { xTranslation, yTranslation };
+  }
+
+  function drawFirstElement(firstElement: any) {
+    p.push();
+    p.strokeWeight(0.5);
+    p.quad(
+      firstElement.vertices[0].x,
+      firstElement.vertices[0].y,
+      firstElement.vertices[1].x,
+      firstElement.vertices[1].y,
+      firstElement.vertices[2].x,
+      firstElement.vertices[2].y,
+      firstElement.vertices[3].x,
+      firstElement.vertices[3].y
+    );
+    p.pop();
+  }
+
   p.setup = () => {
     const sideSize = 10;
     const canvas = p.createCanvas(400, 400);
@@ -294,21 +336,7 @@ const drawingSketch = (p: p5) => {
       return aLen < bLen ? a : b;
     });
 
-    // console.log(firstElement.connections);
-
-    p.push();
-    p.strokeWeight(0.5);
-    p.quad(
-      firstElement.vertices[0].x,
-      firstElement.vertices[0].y,
-      firstElement.vertices[1].x,
-      firstElement.vertices[1].y,
-      firstElement.vertices[2].x,
-      firstElement.vertices[2].y,
-      firstElement.vertices[3].x,
-      firstElement.vertices[3].y
-    );
-    p.pop();
+    drawFirstElement(firstElement);
 
     // TODO translate
 
@@ -343,28 +371,7 @@ const drawingSketch = (p: p5) => {
         };
       });
 
-      const a: any[] = [];
-      firstElement.vertices.forEach((p1: Point) => {
-        n.vertices.forEach((p2: Point) => {
-          const distance = p.createVector(p2.x - p1.x, p2.y - p1.y).mag();
-          a.push({
-            baseP: p1,
-            nodeP: p2,
-            distance,
-          });
-        });
-      });
-
-      a.sort((a: any, b: any) => {
-        if (a.distance < b.distance) {
-          return -1;
-        } else {
-          return 1;
-        }
-      });
-
-      const xTranslation = a[0].baseP.x - a[0].nodeP.x;
-      const yTranslation = a[0].baseP.y - a[0].nodeP.y;
+      const { xTranslation, yTranslation } = getTranslations(firstElement, n);
 
       let matches = 0;
       let newPoints = diamondVertices.map((point: Point) => {
@@ -389,9 +396,18 @@ const drawingSketch = (p: p5) => {
       });
 
       if (matches === 1) {
-        newPoints = diamondVertices.map((point: Point) => {
-          const newX = point.x - xTranslation;
-          const newY = point.y - yTranslation;
+        n.vertices = diamondVertices.map((ver: any) => {
+          return {
+            x: ver.x - xTranslation,
+            y: ver.y - yTranslation,
+          };
+        });
+
+        const r = getTranslations(firstElement, n);
+
+        newPoints = n.vertices.map((point: Point) => {
+          const newX = point.x + r.xTranslation;
+          const newY = point.y + r.yTranslation;
           return {
             x: newX,
             y: newY,
