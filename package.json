@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "bootstrap": "^4.5.2",
+    "lodash": "^4.17.20",
     "p5": "^1.1.9",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
@@ -22,17 +23,18 @@
     "@testing-library/react": "^9.5.0",
     "@testing-library/user-event": "^7.2.1",
     "@types/jest": "^24.9.1",
+    "@types/lodash": "^4.14.161",
     "@types/node": "^12.12.54",
     "@types/p5": "^0.9.1",
     "@types/react": "^16.9.46",
     "@types/react-dom": "^16.9.8",
     "eslint": "^6.6.0",
     "eslint-plugin-react": "^7.20.6",
-    "prettier": "^2.0.5",
-    "typescript": "^3.7.5",
     "husky": "^4.2.5",
+    "lint-staged": "^10.2.4",
+    "prettier": "^2.0.5",
     "pretty-quick": "^2.0.1",
-    "lint-staged": "^10.2.4"
+    "typescript": "^3.7.5"
   },
   "eslintConfig": {
     "extends": "react-app"

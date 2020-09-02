@@ -20,6 +20,15 @@ export class LinearFunction {
     return new LinearFunction(a, b);
   }
 
+  /**
+   * @param f
+   * @return angle between two linear functions
+   */
+  calculateSlope(f: LinearFunction): number {
+    const tan = Math.abs((this.a - f.a) / (1 + this.a * f.a));
+    return (Math.atan(tan) * 180) / Math.PI;
+  }
+
   evaluate(x: number) {
     return this.a * (x - this.xT) + this.b + this.yT;
   }
