@@ -243,51 +243,43 @@ export class DrawingCalculations {
     mainNode.connections.forEach((nextNode) => {
       this.slideDiamonds(nextNode, mainNode, sideSize);
 
-      const { x, y } = this.getClosestPointsTranslation(mainNode, nextNode);
+      const t1 = this.getClosestPointsTranslation(mainNode, nextNode);
 
       let matches = 0;
-      let newPoints = nextNode.vertices.map((point: Point) => {
-        const newX = point.x + x;
-        const newY = point.y + y;
+      let newVertices = nextNode.vertices.map((point: Point) => {
+        const newX = point.x + t1.x;
+        const newY = point.y + t1.y;
 
-        const match = mainNode.vertices.find((ver: any) => {
-          const z = 10000;
+        const isPointMatching = mainNode.vertices.find((vertice) => {
+          const accuracy = 10000;
           return (
-            Math.round(ver.x * z) / z === Math.round(newX * z) / z &&
-            Math.round(ver.y * z) / z === Math.round(newY * z) / z
+            Math.round(vertice.x * accuracy) / accuracy ===
+              Math.round(newX * accuracy) / accuracy &&
+            Math.round(vertice.y * accuracy) / accuracy ===
+              Math.round(newY * accuracy) / accuracy
           );
         });
-        if (match) {
+        if (isPointMatching) {
           matches++;
         }
 
-        return {
-          x: newX,
-          y: newY,
-        };
+        return { x: newX, y: newY };
       });
 
       if (matches === 1) {
-        nextNode.vertices = nextNode.vertices.map((ver: any) => {
-          return {
-            x: ver.x - x,
-            y: ver.y - y,
-          };
+        nextNode.vertices = nextNode.vertices.map((vertice) => {
+          return { x: vertice.x - t1.x, y: vertice.y - t1.y };
         });
 
-        const r = this.getClosestPointsTranslation(mainNode, nextNode);
-
-        newPoints = nextNode.vertices.map((point: Point) => {
-          const newX = point.x + r.x;
-          const newY = point.y + r.y;
-          return {
-            x: newX,
-            y: newY,
-          };
+        const t2 = this.getClosestPointsTranslation(mainNode, nextNode);
+        newVertices = nextNode.vertices.map((point: Point) => {
+          const newX = point.x + t2.x;
+          const newY = point.y + t2.y;
+          return { x: newX, y: newY };
         });
       }
 
-      nextNode.vertices = newPoints;
+      nextNode.vertices = newVertices;
     });
   }
 
