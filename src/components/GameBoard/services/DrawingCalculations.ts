@@ -239,37 +239,14 @@ export class DrawingCalculations {
     });
   }
 
-  closeUpConnectedNodes(mainNode: Node, nodes: Node[], sideSize: number) {
-    mainNode.connections.forEach((node) => {
-      let diamondVertices = node.vertices;
+  closeUpConnectedNodes(mainNode: Node, nodes: Node[], sideSize: number): void {
+    mainNode.connections.forEach((nextNode) => {
+      this.slideDiamonds(nextNode, mainNode, sideSize);
 
-      const v = this.p.createVector(
-        node.center.x - mainNode.center.x,
-        node.center.y - mainNode.center.y
-      );
-
-      let distance = v.mag();
-      v.normalize();
-
-      const h1 = sideSize * Math.sin((mainNode.angle * Math.PI) / 180);
-      const h2 = sideSize * Math.sin((node.angle * Math.PI) / 180);
-      distance = distance - h1 * 0.5 - h2 * 0.5;
-
-      v.mult(distance);
-
-      diamondVertices = diamondVertices.map((vertice) => {
-        vertice.x = vertice.x - v.x;
-        vertice.y = vertice.y - v.y;
-        return {
-          x: vertice.x,
-          y: vertice.y,
-        };
-      });
-
-      const { x, y } = this.calculateClosestPointsTranslation(mainNode, node);
+      const { x, y } = this.getClosestPointsTranslation(mainNode, nextNode);
 
       let matches = 0;
-      let newPoints = diamondVertices.map((point: Point) => {
+      let newPoints = nextNode.vertices.map((point: Point) => {
         const newX = point.x + x;
         const newY = point.y + y;
 
@@ -291,16 +268,16 @@ export class DrawingCalculations {
       });
 
       if (matches === 1) {
-        node.vertices = diamondVertices.map((ver: any) => {
+        nextNode.vertices = nextNode.vertices.map((ver: any) => {
           return {
             x: ver.x - x,
             y: ver.y - y,
           };
         });
 
-        const r = this.calculateClosestPointsTranslation(mainNode, node);
+        const r = this.getClosestPointsTranslation(mainNode, nextNode);
 
-        newPoints = node.vertices.map((point: Point) => {
+        newPoints = nextNode.vertices.map((point: Point) => {
           const newX = point.x + r.x;
           const newY = point.y + r.y;
           return {
@@ -310,14 +287,32 @@ export class DrawingCalculations {
         });
       }
 
-      node.vertices = newPoints;
+      nextNode.vertices = newPoints;
     });
   }
 
-  private calculateClosestPointsTranslation(
-    node1: Node,
-    node2: Node
-  ): p5.Vector {
+  private slideDiamonds(nextNode: Node, mainNode: Node, sideSize: number) {
+    const nodesTranslation = this.p.createVector(
+      nextNode.center.x - mainNode.center.x,
+      nextNode.center.y - mainNode.center.y
+    );
+    let distance = nodesTranslation.mag();
+    nodesTranslation.normalize();
+
+    const diamond1Height =
+      sideSize * Math.sin((mainNode.angle * Math.PI) / 180);
+    const diamond2Height =
+      sideSize * Math.sin((nextNode.angle * Math.PI) / 180);
+    distance = distance - diamond1Height * 0.5 - diamond2Height * 0.5;
+    nodesTranslation.mult(distance);
+
+    nextNode.vertices.forEach((vertice) => {
+      vertice.x = vertice.x - nodesTranslation.x;
+      vertice.y = vertice.y - nodesTranslation.y;
+    });
+  }
+
+  private getClosestPointsTranslation(node1: Node, node2: Node): p5.Vector {
     const segments: Segment[] = [];
     node1.vertices.forEach((p1) => {
       node2.vertices.forEach((p2) => {
