@@ -199,11 +199,9 @@ export class DrawingCalculations {
     });
   }
 
-  connectNodes(functions: LinearFunction[][], nodes: Node[]) {
-    functions.forEach((group, i) => {
-      group.forEach((f, j) => {
-        if (i > j) return;
-
+  bindNodes(functions: LinearFunction[][], nodes: Node[]) {
+    functions.forEach((group) => {
+      group.forEach((f) => {
         // TODO
         const functionNodes = nodes.filter(
           (node) =>
@@ -217,8 +215,8 @@ export class DrawingCalculations {
               node.intersection.f2.yT === f.yT)
         );
 
-        functionNodes.sort((a: any, b: any) =>
-          a.intersection.x < b.intersection.x ? -1 : 1
+        functionNodes.sort((node1, node2) =>
+          node1.intersection.x < node2.intersection.x ? -1 : 1
         );
 
         let lastRef: any = functionNodes.shift();
@@ -239,7 +237,7 @@ export class DrawingCalculations {
     });
   }
 
-  closeUpConnectedNodes(mainNode: Node, nodes: Node[], sideSize: number): void {
+  connectNodesVertices(mainNode: Node, sideSize: number): void {
     mainNode.connections.forEach((nextNode) => {
       this.slideDiamonds(nextNode, mainNode, sideSize);
 

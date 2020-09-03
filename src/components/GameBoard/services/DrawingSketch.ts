@@ -43,25 +43,44 @@ const drawingSketch = (p: p5) => {
     );
     // drawingUtils.drawNodes(graphNodes);
 
-    drawingCalculations.connectNodes(gridFunctions, graphNodes);
+    drawingCalculations.bindNodes(gridFunctions, graphNodes);
 
     const firstNode = drawingCalculations.findFirstGridNode(graphNodes);
     drawingUtils.drawNode(firstNode);
 
     // TODO translate
 
-    const doneNodes = [];
-    drawingCalculations.closeUpConnectedNodes(firstNode, graphNodes, sideSize);
-    const secondNode = graphNodes.find(
-      (node) => node.id === firstNode.connections[0].id
-    ) as Node;
-    drawingUtils.drawNode(secondNode);
-    drawingCalculations.closeUpConnectedNodes(secondNode, graphNodes, sideSize);
-    const nextNode = graphNodes.find(
-      (node) => node.id === secondNode.connections[0].id
-    ) as Node;
-    drawingUtils.drawNode(nextNode);
+    generateTiling(firstNode, [], drawingCalculations, sideSize, drawingUtils);
   };
+
+  function generateTiling(
+    node: Node,
+    doneIds: number[],
+    drawingCalculations: any,
+    sideSize: number,
+    drawingUtils: any,
+    i = 0
+  ) {
+    if (i === 3) {
+      return;
+    }
+    i++;
+    drawingCalculations.connectNodesVertices(node, sideSize);
+    drawingUtils.drawNode(node);
+    doneIds.push(node.id);
+    node.connections.forEach((nextNode) => {
+      if (!doneIds.includes(nextNode.id)) {
+        generateTiling(
+          nextNode,
+          doneIds,
+          drawingCalculations,
+          sideSize,
+          drawingUtils,
+          i
+        );
+      }
+    });
+  }
 };
 
 export { drawingSketch };
