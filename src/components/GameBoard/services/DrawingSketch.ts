@@ -45,17 +45,18 @@ const drawingSketch = (p: p5) => {
 
     drawingCalculations.connectNodes(gridFunctions, graphNodes);
 
-    const firstNode = drawingCalculations.findFirstNode(graphNodes);
+    const firstNode = drawingCalculations.findFirstGridNode(graphNodes);
     drawingUtils.drawNode(firstNode);
 
     // TODO translate
 
-    drawingCalculations.mergeConnectedNodes(firstNode, graphNodes, sideSize);
+    const doneNodes = [];
+    drawingCalculations.closeUpConnectedNodes(firstNode, graphNodes, sideSize);
     const secondNode = graphNodes.find(
       (node) => node.id === firstNode.connections[0].id
     ) as Node;
     drawingUtils.drawNode(secondNode);
-    drawingCalculations.mergeConnectedNodes(secondNode, graphNodes, sideSize);
+    drawingCalculations.closeUpConnectedNodes(secondNode, graphNodes, sideSize);
     const nextNode = graphNodes.find(
       (node) => node.id === secondNode.connections[0].id
     ) as Node;

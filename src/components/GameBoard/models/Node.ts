@@ -5,7 +5,7 @@ export interface Node {
   id: number;
   intersection: Intersection;
   center: Point;
-  vertices: any;
-  connections: any[];
+  vertices: Point[];
+  connections: Node[];
   angle: number;
 }

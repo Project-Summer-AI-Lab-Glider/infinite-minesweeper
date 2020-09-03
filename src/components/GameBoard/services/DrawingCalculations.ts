@@ -4,6 +4,7 @@ import { Point } from "../models/Point";
 import { LinearFunction } from "../models/LinearFunction";
 import { Intersection } from "../models/Intersection";
 import { Node } from "../models/Node";
+import { Segment } from "../models/Segment";
 
 export class DrawingCalculations {
   constructor(private readonly p: p5) {}
@@ -222,19 +223,15 @@ export class DrawingCalculations {
 
         let lastRef: any = functionNodes.shift();
         functionNodes.forEach((node) => {
-          lastRef.connections.push({
-            id: node.id,
-          });
-          node.connections.push({
-            id: lastRef.id,
-          });
+          lastRef.connections.push(node);
+          node.connections.push(lastRef);
           lastRef = node;
         });
       });
     });
   }
 
-  findFirstNode(nodes: Node[]) {
+  findFirstGridNode(nodes: Node[]) {
     return nodes.reduce((n1, n2) => {
       const aLen = this.p.createVector(n1.center.x, n1.center.y).mag();
       const bLen = this.p.createVector(n2.center.x, n2.center.y).mag();
@@ -242,26 +239,25 @@ export class DrawingCalculations {
     });
   }
 
-  mergeConnectedNodes(firstNode: Node, nodes: Node[], sideSize: number) {
-    firstNode.connections.forEach((node: any) => {
-      const n: any = nodes.find((e) => e.id === node.id);
-      let diamondVertices = n.vertices;
+  closeUpConnectedNodes(mainNode: Node, nodes: Node[], sideSize: number) {
+    mainNode.connections.forEach((node) => {
+      let diamondVertices = node.vertices;
 
       const v = this.p.createVector(
-        n.center.x - firstNode.center.x,
-        n.center.y - firstNode.center.y
+        node.center.x - mainNode.center.x,
+        node.center.y - mainNode.center.y
       );
 
       let distance = v.mag();
       v.normalize();
 
-      const h1 = sideSize * Math.sin((firstNode.angle * Math.PI) / 180);
-      const h2 = sideSize * Math.sin((n.angle * Math.PI) / 180);
+      const h1 = sideSize * Math.sin((mainNode.angle * Math.PI) / 180);
+      const h2 = sideSize * Math.sin((node.angle * Math.PI) / 180);
       distance = distance - h1 * 0.5 - h2 * 0.5;
 
       v.mult(distance);
 
-      diamondVertices = diamondVertices.map((vertice: any) => {
+      diamondVertices = diamondVertices.map((vertice) => {
         vertice.x = vertice.x - v.x;
         vertice.y = vertice.y - v.y;
         return {
@@ -270,14 +266,14 @@ export class DrawingCalculations {
         };
       });
 
-      const { xTranslation, yTranslation } = this.getTranslations(firstNode, n);
+      const { x, y } = this.calculateClosestPointsTranslation(mainNode, node);
 
       let matches = 0;
       let newPoints = diamondVertices.map((point: Point) => {
-        const newX = point.x + xTranslation;
-        const newY = point.y + yTranslation;
+        const newX = point.x + x;
+        const newY = point.y + y;
 
-        const match = firstNode.vertices.find((ver: any) => {
+        const match = mainNode.vertices.find((ver: any) => {
           const z = 10000;
           return (
             Math.round(ver.x * z) / z === Math.round(newX * z) / z &&
@@ -295,18 +291,18 @@ export class DrawingCalculations {
       });
 
       if (matches === 1) {
-        n.vertices = diamondVertices.map((ver: any) => {
+        node.vertices = diamondVertices.map((ver: any) => {
           return {
-            x: ver.x - xTranslation,
-            y: ver.y - yTranslation,
+            x: ver.x - x,
+            y: ver.y - y,
           };
         });
 
-        const r = this.getTranslations(firstNode, n);
+        const r = this.calculateClosestPointsTranslation(mainNode, node);
 
-        newPoints = n.vertices.map((point: Point) => {
-          const newX = point.x + r.xTranslation;
-          const newY = point.y + r.yTranslation;
+        newPoints = node.vertices.map((point: Point) => {
+          const newX = point.x + r.x;
+          const newY = point.y + r.y;
           return {
             x: newX,
             y: newY,
@@ -314,33 +310,27 @@ export class DrawingCalculations {
         });
       }
 
-      n.vertices = newPoints;
+      node.vertices = newPoints;
     });
   }
 
-  private getTranslations(firstElement: any, neighbour: any) {
-    const a: any[] = [];
-    firstElement.vertices.forEach((p1: Point) => {
-      neighbour.vertices.forEach((p2: Point) => {
-        const distance = this.p.createVector(p2.x - p1.x, p2.y - p1.y).mag();
-        a.push({
-          baseP: p1,
-          nodeP: p2,
-          distance,
-        });
+  private calculateClosestPointsTranslation(
+    node1: Node,
+    node2: Node
+  ): p5.Vector {
+    const segments: Segment[] = [];
+    node1.vertices.forEach((p1) => {
+      node2.vertices.forEach((p2) => {
+        const length = this.p.createVector(p2.x - p1.x, p2.y - p1.y).mag();
+        segments.push({ p1, p2, length });
       });
     });
 
-    a.sort((a: any, b: any) => {
-      if (a.distance < b.distance) {
-        return -1;
-      } else {
-        return 1;
-      }
-    });
+    segments.sort((a, b) => (a.length < b.length ? -1 : 1));
 
-    const xTranslation = a[0].baseP.x - a[0].nodeP.x;
-    const yTranslation = a[0].baseP.y - a[0].nodeP.y;
-    return { xTranslation, yTranslation };
+    const xT = segments[0].p1.x - segments[0].p2.x;
+    const yT = segments[0].p1.y - segments[0].p2.y;
+
+    return this.p.createVector(xT, yT);
   }
 }
