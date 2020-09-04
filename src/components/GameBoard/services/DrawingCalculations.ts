@@ -1,5 +1,5 @@
 import * as p5 from "p5";
-import { range } from "lodash";
+import { cloneDeep, range } from "lodash";
 import { Point } from "../models/Point";
 import { LinearFunction } from "../models/LinearFunction";
 import { Intersection } from "../models/Intersection";
@@ -102,6 +102,7 @@ export class DrawingCalculations {
   }
 
   private calculateLinesIntersection(
+    // TODO investigate b
     f1: LinearFunction,
     f2: LinearFunction,
     gridSpace: number
@@ -192,7 +193,12 @@ export class DrawingCalculations {
           x: i.x,
           y: i.y,
         },
+        oldCenter: {
+          x: i.x,
+          y: i.y,
+        },
         vertices: diamondVertices,
+        oldVertices: cloneDeep(diamondVertices),
         connections: [],
         angle: i.diamondAngle,
       };
@@ -237,81 +243,141 @@ export class DrawingCalculations {
     });
   }
 
-  connectNodesVertices(mainNode: Node, sideSize: number): void {
-    mainNode.connections.forEach((nextNode) => {
-      this.slideDiamonds(nextNode, mainNode, sideSize);
+  connectNodesVertices(mainNode: Node, nextNode: Node, sideSize: number): void {
+    const baseTranslation = this.slideDiamonds(mainNode, nextNode, sideSize);
 
-      const t1 = this.getClosestPointsTranslation(mainNode, nextNode);
+    let newVertices = nextNode.oldVertices.map((vertice) => {
+      return {
+        x: vertice.x + baseTranslation.x,
+        y: vertice.y + baseTranslation.y,
+      };
+    });
 
-      let matches = 0;
-      let newVertices = nextNode.vertices.map((point: Point) => {
-        const newX = point.x + t1.x;
-        const newY = point.y + t1.y;
+    // TODO
+    if (nextNode.id === 82) {
+      nextNode.vertices = newVertices;
+      return;
+    }
 
-        const isPointMatching = mainNode.vertices.find((vertice) => {
-          const accuracy = 10000;
-          return (
-            Math.round(vertice.x * accuracy) / accuracy ===
-              Math.round(newX * accuracy) / accuracy &&
-            Math.round(vertice.y * accuracy) / accuracy ===
-              Math.round(newY * accuracy) / accuracy
-          );
-        });
-        if (isPointMatching) {
-          matches++;
-        }
+    const t1 = this.getClosestPointsTranslation(
+      mainNode.oldVertices,
+      newVertices
+    );
+    let translation = cloneDeep(baseTranslation).add(t1);
 
-        return { x: newX, y: newY };
-      });
+    let matches = 0;
+    const baseVert = cloneDeep(newVertices);
+    newVertices = baseVert.map((point: Point) => {
+      const newX = point.x + t1.x;
+      const newY = point.y + t1.y;
 
-      if (matches === 1) {
-        nextNode.vertices = nextNode.vertices.map((vertice) => {
-          return { x: vertice.x - t1.x, y: vertice.y - t1.y };
-        });
-
-        const t2 = this.getClosestPointsTranslation(mainNode, nextNode);
-        newVertices = nextNode.vertices.map((point: Point) => {
-          const newX = point.x + t2.x;
-          const newY = point.y + t2.y;
-          return { x: newX, y: newY };
-        });
+      const isPointMatching = this.arePointsSame(mainNode, newX, newY);
+      if (isPointMatching) {
+        matches++;
       }
 
-      nextNode.vertices = newVertices;
+      return { x: newX, y: newY };
+    });
+
+    if (matches === 1) {
+      matches = 0;
+      newVertices = baseVert.map((vertice) => {
+        // base vertices
+        return { x: vertice.x - t1.x, y: vertice.y - t1.y };
+      });
+
+      const t2 = this.getClosestPointsTranslation(
+        mainNode.oldVertices,
+        newVertices
+      );
+      translation = cloneDeep(baseTranslation).sub(t1).add(t2);
+      newVertices = newVertices.map((point: Point) => {
+        const newX = point.x + t2.x;
+        const newY = point.y + t2.y;
+        return { x: newX, y: newY };
+      });
+    }
+
+    nextNode.translation = cloneDeep(mainNode.translation as any).add(
+      translation
+    );
+    newVertices = newVertices.map((v) => {
+      return {
+        x: v.x + (mainNode.translation as any).x,
+        y: v.y + (mainNode.translation as any).y,
+      };
+    });
+
+    nextNode.center = {
+      x: nextNode.oldCenter.x + (nextNode.translation as any).x,
+      y: nextNode.oldCenter.y + (nextNode.translation as any).y,
+    };
+    nextNode.vertices = newVertices;
+  }
+
+  private arePointsSame(mainNode: Node, x: number, y: number) {
+    return mainNode.vertices.find((vertice) => {
+      const accuracy = 10000;
+      return (
+        Math.round(vertice.x * accuracy) / accuracy ===
+          Math.round(x * accuracy) / accuracy &&
+        Math.round(vertice.y * accuracy) / accuracy ===
+          Math.round(y * accuracy) / accuracy
+      );
     });
   }
 
-  private slideDiamonds(nextNode: Node, mainNode: Node, sideSize: number) {
+  private slideDiamonds(
+    mainNode: Node,
+    nextNode: Node,
+    sideSize: number
+  ): p5.Vector {
     const nodesTranslation = this.p.createVector(
-      nextNode.center.x - mainNode.center.x,
-      nextNode.center.y - mainNode.center.y
+      nextNode.oldCenter.x - mainNode.oldCenter.x,
+      nextNode.oldCenter.y - mainNode.oldCenter.y
     );
-    let distance = nodesTranslation.mag();
+    const centersDistance = nodesTranslation.mag();
     nodesTranslation.normalize();
+    console.log(nodesTranslation);
 
     const diamond1Height =
       sideSize * Math.sin((mainNode.angle * Math.PI) / 180);
     const diamond2Height =
       sideSize * Math.sin((nextNode.angle * Math.PI) / 180);
-    distance = distance - diamond1Height * 0.5 - diamond2Height * 0.5;
+    let distance = centersDistance - (diamond1Height + diamond2Height) * 0.5;
+    if (centersDistance < (diamond1Height + diamond2Height) * 0.5) {
+      // one diamond into another
+      distance = (diamond1Height + diamond2Height) * 0.5 - centersDistance;
+    }
     nodesTranslation.mult(distance);
+    // const nextNodeCenter = nextNode.center;
+    // nextNode.center = {
+    //   x: nextNodeCenter.x - nodesTranslation.x,
+    //   y: nextNodeCenter.y - nodesTranslation.y,
+    // };
+    // nextNode.vertices.forEach((vertice) => {
+    //   vertice.x = vertice.x - nodesTranslation.x;
+    //   vertice.y = vertice.y - nodesTranslation.y;
+    // });
 
-    nextNode.vertices.forEach((vertice) => {
-      vertice.x = vertice.x - nodesTranslation.x;
-      vertice.y = vertice.y - nodesTranslation.y;
-    });
+    return nodesTranslation;
   }
 
-  private getClosestPointsTranslation(node1: Node, node2: Node): p5.Vector {
+  private getClosestPointsTranslation(
+    vertices1: Point[],
+    vertices2: Point[],
+    skip = 0
+  ): p5.Vector {
     const segments: Segment[] = [];
-    node1.vertices.forEach((p1) => {
-      node2.vertices.forEach((p2) => {
+    vertices1.forEach((p1) => {
+      vertices2.forEach((p2) => {
         const length = this.p.createVector(p2.x - p1.x, p2.y - p1.y).mag();
         segments.push({ p1, p2, length });
       });
     });
 
     segments.sort((a, b) => (a.length < b.length ? -1 : 1));
+    range(skip).forEach(() => segments.shift());
 
     const xT = segments[0].p1.x - segments[0].p2.x;
     const yT = segments[0].p1.y - segments[0].p2.y;

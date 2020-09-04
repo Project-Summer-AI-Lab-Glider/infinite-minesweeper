@@ -46,11 +46,43 @@ const drawingSketch = (p: p5) => {
     drawingCalculations.bindNodes(gridFunctions, graphNodes);
 
     const firstNode = drawingCalculations.findFirstGridNode(graphNodes);
-    drawingUtils.drawNode(firstNode);
 
     // TODO translate
 
-    generateTiling(firstNode, [], drawingCalculations, sideSize, drawingUtils);
+    // TODO remove
+    firstNode.translation = p.createVector(0, 0);
+    drawingUtils.drawNode(firstNode);
+
+    drawingCalculations.connectNodesVertices(
+      firstNode,
+      firstNode.connections[1],
+      sideSize
+    );
+    drawingUtils.drawNode(firstNode.connections[1]);
+
+    drawingUtils.drawNode(firstNode.connections[1].connections[1]);
+    drawingCalculations.connectNodesVertices(
+      firstNode.connections[1],
+      firstNode.connections[1].connections[1],
+      sideSize
+    );
+    drawingUtils.drawNode(firstNode.connections[1].connections[1]);
+
+    /////////////////////////////
+
+    drawingUtils.drawNode(
+      firstNode.connections[1].connections[1].connections[1]
+    );
+    drawingCalculations.connectNodesVertices(
+      firstNode.connections[1].connections[1],
+      firstNode.connections[1].connections[1].connections[1],
+      sideSize
+    );
+    drawingUtils.drawNode(
+      firstNode.connections[1].connections[1].connections[1]
+    );
+
+    // generateTiling(firstNode, [], drawingCalculations, sideSize, drawingUtils);
   };
 
   function generateTiling(
@@ -65,9 +97,14 @@ const drawingSketch = (p: p5) => {
       return;
     }
     i++;
-    drawingCalculations.connectNodesVertices(node, sideSize);
+
     drawingUtils.drawNode(node);
     doneIds.push(node.id);
+    node.connections.forEach((nextNode) => {
+      if (!doneIds.includes(nextNode.id)) {
+        drawingCalculations.connectNodesVertices(node, nextNode, sideSize);
+      }
+    });
     node.connections.forEach((nextNode) => {
       if (!doneIds.includes(nextNode.id)) {
         generateTiling(
