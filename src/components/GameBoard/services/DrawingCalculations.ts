@@ -333,7 +333,6 @@ export class DrawingCalculations {
     );
     const centersDistance = nodesTranslation.mag();
     nodesTranslation.normalize();
-    console.log(nodesTranslation);
 
     const diamond1Height =
       sideSize * Math.sin((mainNode.angle * Math.PI) / 180);

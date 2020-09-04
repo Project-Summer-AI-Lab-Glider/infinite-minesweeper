@@ -51,8 +51,8 @@ const drawingSketch = (p: p5) => {
 
     // TODO remove
     firstNode.translation = p.createVector(0, 0);
-    drawingUtils.drawNode(firstNode);
-
+    // drawingUtils.drawNode(firstNode);
+    //
     // drawingCalculations.connectNodesVertices(
     //   firstNode,
     //   firstNode.connections[1],
@@ -60,7 +60,6 @@ const drawingSketch = (p: p5) => {
     // );
     // drawingUtils.drawNode(firstNode.connections[1]);
     //
-    // drawingUtils.drawNode(firstNode.connections[1].connections[1]);
     // drawingCalculations.connectNodesVertices(
     //   firstNode.connections[1],
     //   firstNode.connections[1].connections[1],
@@ -78,39 +77,51 @@ const drawingSketch = (p: p5) => {
     // drawingUtils.drawNode(
     //   firstNode.connections[1].connections[1].connections[1]
     // );
+    //
+    // drawingCalculations.connectNodesVertices(
+    //     firstNode.connections[1].connections[1].connections[1],
+    //     firstNode.connections[1].connections[1].connections[1].connections[1],
+    //     sideSize
+    // );
+    // drawingUtils.drawNode(
+    //     firstNode.connections[1].connections[1].connections[1].connections[1]
+    // );
 
-    generateTiling(firstNode, [], drawingCalculations, sideSize, drawingUtils);
+    generateTiling(firstNode, drawingCalculations, sideSize, drawingUtils);
   };
 
   function generateTiling(
     node: Node,
-    doneIds: number[],
     drawingCalculations: any,
     sideSize: number,
     drawingUtils: any,
-    i = 0
+    i = 0,
+    connectedIds: number[] = [],
+    generatedIds: number[] = []
   ) {
-    if (i === 5) {
+    if (i === 100) {
       return;
     }
-    i++;
 
-    drawingUtils.drawNode(node);
-    doneIds.push(node.id);
     node.connections.forEach((nextNode) => {
-      if (!doneIds.includes(nextNode.id)) {
+      if (!connectedIds.includes(nextNode.id)) {
+        connectedIds.push(nextNode.id);
         drawingCalculations.connectNodesVertices(node, nextNode, sideSize);
+        drawingUtils.drawNode(nextNode);
       }
     });
+
     node.connections.forEach((nextNode) => {
-      if (!doneIds.includes(nextNode.id)) {
+      if (!generatedIds.includes(nextNode.id)) {
+        generatedIds.push(nextNode.id);
         generateTiling(
           nextNode,
-          doneIds,
           drawingCalculations,
           sideSize,
           drawingUtils,
-          i
+          i + 1,
+          connectedIds,
+          generatedIds
         );
       }
     });
