@@ -45,9 +45,9 @@ export class DrawingUtils {
     nodes.forEach((node) => this.drawNode(node));
   }
 
-  drawNode(node: Node, color = "purple") {
+  drawNode(node: Node, displayId = false) {
     this.p.push();
-    this.p.stroke(color);
+    this.p.stroke("purple");
     this.p.strokeWeight(0.5);
     this.p.quad(
       node.vertices[0].x,
@@ -61,10 +61,12 @@ export class DrawingUtils {
     );
     this.p.pop();
 
-    this.p.push();
-    this.p.stroke("white");
-    this.p.textSize(3);
-    this.p.text(node.id, node.center.x, node.center.y);
-    this.p.pop();
+    if (displayId) {
+      this.p.push();
+      this.p.stroke("white");
+      this.p.textSize(3);
+      this.p.text(node.id, node.center.x, node.center.y);
+      this.p.pop();
+    }
   }
 }

@@ -254,10 +254,6 @@ export class DrawingCalculations {
     });
 
     // TODO
-    if (nextNode.id === 82) {
-      nextNode.vertices = newVertices;
-      return;
-    }
 
     const t1 = this.getClosestPointsTranslation(
       mainNode.oldVertices,
@@ -280,7 +276,6 @@ export class DrawingCalculations {
     });
 
     if (matches === 1) {
-      matches = 0;
       newVertices = baseVert.map((vertice) => {
         // base vertices
         return { x: vertice.x - t1.x, y: vertice.y - t1.y };
@@ -316,7 +311,7 @@ export class DrawingCalculations {
   }
 
   private arePointsSame(mainNode: Node, x: number, y: number) {
-    return mainNode.vertices.find((vertice) => {
+    return mainNode.oldVertices.find((vertice) => {
       const accuracy = 10000;
       return (
         Math.round(vertice.x * accuracy) / accuracy ===

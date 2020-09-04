@@ -53,36 +53,33 @@ const drawingSketch = (p: p5) => {
     firstNode.translation = p.createVector(0, 0);
     drawingUtils.drawNode(firstNode);
 
-    drawingCalculations.connectNodesVertices(
-      firstNode,
-      firstNode.connections[1],
-      sideSize
-    );
-    drawingUtils.drawNode(firstNode.connections[1]);
+    // drawingCalculations.connectNodesVertices(
+    //   firstNode,
+    //   firstNode.connections[1],
+    //   sideSize
+    // );
+    // drawingUtils.drawNode(firstNode.connections[1]);
+    //
+    // drawingUtils.drawNode(firstNode.connections[1].connections[1]);
+    // drawingCalculations.connectNodesVertices(
+    //   firstNode.connections[1],
+    //   firstNode.connections[1].connections[1],
+    //   sideSize
+    // );
+    // drawingUtils.drawNode(firstNode.connections[1].connections[1]);
+    //
+    // // /////////////////////////////
+    //
+    // drawingCalculations.connectNodesVertices(
+    //   firstNode.connections[1].connections[1],
+    //   firstNode.connections[1].connections[1].connections[1],
+    //   sideSize
+    // );
+    // drawingUtils.drawNode(
+    //   firstNode.connections[1].connections[1].connections[1]
+    // );
 
-    drawingUtils.drawNode(firstNode.connections[1].connections[1]);
-    drawingCalculations.connectNodesVertices(
-      firstNode.connections[1],
-      firstNode.connections[1].connections[1],
-      sideSize
-    );
-    drawingUtils.drawNode(firstNode.connections[1].connections[1]);
-
-    /////////////////////////////
-
-    drawingUtils.drawNode(
-      firstNode.connections[1].connections[1].connections[1]
-    );
-    drawingCalculations.connectNodesVertices(
-      firstNode.connections[1].connections[1],
-      firstNode.connections[1].connections[1].connections[1],
-      sideSize
-    );
-    drawingUtils.drawNode(
-      firstNode.connections[1].connections[1].connections[1]
-    );
-
-    // generateTiling(firstNode, [], drawingCalculations, sideSize, drawingUtils);
+    generateTiling(firstNode, [], drawingCalculations, sideSize, drawingUtils);
   };
 
   function generateTiling(
@@ -93,7 +90,7 @@ const drawingSketch = (p: p5) => {
     drawingUtils: any,
     i = 0
   ) {
-    if (i === 3) {
+    if (i === 5) {
       return;
     }
     i++;
