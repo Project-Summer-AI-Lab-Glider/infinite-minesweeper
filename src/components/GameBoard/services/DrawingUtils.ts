@@ -45,9 +45,9 @@ export class DrawingUtils {
     nodes.forEach((node) => this.drawNode(node));
   }
 
-  drawNode(node: Node, displayId = false) {
+  drawNode(node: Node, displayId = false, color = "purple") {
     this.p.push();
-    this.p.stroke("purple");
+    this.p.stroke(color);
     this.p.strokeWeight(0.5);
     this.p.quad(
       node.vertices[0].x,
@@ -58,6 +58,32 @@ export class DrawingUtils {
       node.vertices[2].y,
       node.vertices[3].x,
       node.vertices[3].y
+    );
+    this.p.pop();
+
+    if (displayId) {
+      this.p.push();
+      this.p.stroke("white");
+      this.p.textSize(3);
+      this.p.text(node.id, node.center.x, node.center.y);
+      this.p.pop();
+    }
+  }
+
+  // TODO remove
+  drawNodeOld(node: Node, displayId = false, color = "orange") {
+    this.p.push();
+    this.p.stroke(color);
+    this.p.strokeWeight(0.5);
+    this.p.quad(
+      node.oldVertices[0].x,
+      node.oldVertices[0].y,
+      node.oldVertices[1].x,
+      node.oldVertices[1].y,
+      node.oldVertices[2].x,
+      node.oldVertices[2].y,
+      node.oldVertices[3].x,
+      node.oldVertices[3].y
     );
     this.p.pop();
 

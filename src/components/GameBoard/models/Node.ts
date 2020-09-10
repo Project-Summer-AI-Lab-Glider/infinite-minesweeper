@@ -12,4 +12,5 @@ export interface Node {
   connections: Node[];
   translation?: Vector;
   angle: number;
+  isMoved: boolean;
 }

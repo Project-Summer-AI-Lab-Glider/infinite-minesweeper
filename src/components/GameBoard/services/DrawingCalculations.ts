@@ -15,7 +15,7 @@ export class DrawingCalculations {
     return gridSlopes.map((a, i) => {
       const b = gridSpace * Math.sqrt(1 + Math.pow(a, 2));
 
-      return range(-5, 6).map((j) => {
+      return range(-10, 10).map((j) => {
         const yTranslation = j * b + offsets[i];
         return new LinearFunction(a, b, offsets[i], yTranslation);
       });
@@ -62,19 +62,19 @@ export class DrawingCalculations {
               Math.round(intersection.y * precision) / precision;
 
             // TODO get only visible intersections
-            if (
-              intersectionX < -this.p.width / 2 ||
-              intersectionX > this.p.width / 2
-            ) {
-              continue;
-            }
-
-            if (
-              intersectionY < -this.p.height / 2 ||
-              intersectionY > this.p.height / 2
-            ) {
-              continue;
-            }
+            // if (
+            //   intersectionX < -this.p.width / 2 ||
+            //   intersectionX > this.p.width / 2
+            // ) {
+            //   continue;
+            // }
+            //
+            // if (
+            //   intersectionY < -this.p.height / 2 ||
+            //   intersectionY > this.p.height / 2
+            // ) {
+            //   continue;
+            // }
 
             const existingIntersection = intersections.find(
               (x: any) => x.x === intersectionX && x.y === intersectionY
@@ -201,6 +201,7 @@ export class DrawingCalculations {
         oldVertices: cloneDeep(diamondVertices),
         connections: [],
         angle: i.diamondAngle,
+        isMoved: false,
       };
     });
   }
@@ -244,7 +245,11 @@ export class DrawingCalculations {
   }
 
   connectNodesVertices(mainNode: Node, nextNode: Node, sideSize: number): void {
-    const baseTranslation = this.slideDiamonds(mainNode, nextNode, sideSize);
+    const baseTranslation = this.getNodesLineTranslation(
+      mainNode,
+      nextNode,
+      sideSize
+    ); // TODO investigate
 
     let newVertices = nextNode.oldVertices.map((vertice) => {
       return {
@@ -252,8 +257,6 @@ export class DrawingCalculations {
         y: vertice.y + baseTranslation.y,
       };
     });
-
-    // TODO
 
     const t1 = this.getClosestPointsTranslation(
       mainNode.oldVertices,
@@ -263,17 +266,26 @@ export class DrawingCalculations {
 
     let matches = 0;
     const baseVert = cloneDeep(newVertices);
-    newVertices = baseVert.map((point: Point) => {
+    newVertices = baseVert.map((point: Point, z) => {
       const newX = point.x + t1.x;
       const newY = point.y + t1.y;
 
-      const isPointMatching = this.arePointsSame(mainNode, newX, newY);
+      const isPointMatching = this.arePointsEqual(mainNode, newX, newY);
       if (isPointMatching) {
         matches++;
       }
 
       return { x: newX, y: newY };
     });
+
+    // if (nextNode.id === 210) {
+    //   nextNode.translation = cloneDeep(mainNode.translation as any).add(
+    //     this.p.createVector(0, 0)
+    //   );
+    //   nextNode.vertices = newVertices;
+    //   nextNode.isMoved = true;
+    //   return;
+    // }
 
     if (matches === 1) {
       newVertices = baseVert.map((vertice) => {
@@ -308,21 +320,35 @@ export class DrawingCalculations {
       y: nextNode.oldCenter.y + (nextNode.translation as any).y,
     };
     nextNode.vertices = newVertices;
+    nextNode.isMoved = true;
   }
 
-  private arePointsSame(mainNode: Node, x: number, y: number) {
-    return mainNode.oldVertices.find((vertice) => {
-      const accuracy = 10000;
-      return (
-        Math.round(vertice.x * accuracy) / accuracy ===
-          Math.round(x * accuracy) / accuracy &&
-        Math.round(vertice.y * accuracy) / accuracy ===
-          Math.round(y * accuracy) / accuracy
-      );
+  private arePointsEqual(mainNode: Node, x: number, y: number) {
+    if (mainNode.id === 217) {
+      console.log("~~~~~~~~~~~~~~~~~~~~~~~~");
+      console.log("x", x);
+      console.log("y", y);
+    }
+
+    return mainNode.oldVertices.find((vertice, z) => {
+      if (mainNode.id === 217) {
+        console.log("x" + z, vertice.x);
+        console.log("y" + z, vertice.y);
+      }
+
+      const accuracy = 100;
+      const isEqual =
+        Math.round(vertice.x * accuracy) === Math.round(x * accuracy) &&
+        Math.round(vertice.y * accuracy) === Math.round(y * accuracy);
+      if (mainNode.id === 217) {
+        console.log("isEqual", isEqual);
+      }
+
+      return isEqual;
     });
   }
 
-  private slideDiamonds(
+  private getNodesLineTranslation(
     mainNode: Node,
     nextNode: Node,
     sideSize: number
@@ -334,25 +360,11 @@ export class DrawingCalculations {
     const centersDistance = nodesTranslation.mag();
     nodesTranslation.normalize();
 
-    const diamond1Height =
-      sideSize * Math.sin((mainNode.angle * Math.PI) / 180);
-    const diamond2Height =
-      sideSize * Math.sin((nextNode.angle * Math.PI) / 180);
-    let distance = centersDistance - (diamond1Height + diamond2Height) * 0.5;
-    if (centersDistance < (diamond1Height + diamond2Height) * 0.5) {
-      // one diamond into another
-      distance = (diamond1Height + diamond2Height) * 0.5 - centersDistance;
-    }
-    nodesTranslation.mult(distance);
-    // const nextNodeCenter = nextNode.center;
-    // nextNode.center = {
-    //   x: nextNodeCenter.x - nodesTranslation.x,
-    //   y: nextNodeCenter.y - nodesTranslation.y,
-    // };
-    // nextNode.vertices.forEach((vertice) => {
-    //   vertice.x = vertice.x - nodesTranslation.x;
-    //   vertice.y = vertice.y - nodesTranslation.y;
-    // });
+    const h1 = sideSize * Math.sin((mainNode.angle * Math.PI) / 180);
+    const h2 = sideSize * Math.sin((nextNode.angle * Math.PI) / 180);
+    let distance = centersDistance - (h1 + h2) * 0.5;
+
+    nodesTranslation.mult(-distance);
 
     return nodesTranslation;
   }
