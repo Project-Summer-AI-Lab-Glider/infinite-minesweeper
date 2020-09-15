@@ -1,76 +1,144 @@
 import p5 from "p5";
-import {
-  calculateDirectionCoefficients,
-  calculateGridVectorsEnds,
-} from "./DrawingCalculations";
+import { DrawingCalculations } from "./DrawingCalculations";
+import { DrawingUtils } from "./DrawingUtils";
+import { Node } from "../models/Node";
 
 const drawingSketch = (p: p5) => {
-  let mode = 1;
-  p.setup = () => {
+  p.setup = async () => {
     const canvas = p.createCanvas(400, 400);
     canvas.parent("canvas");
     p.rectMode(p.CENTER);
 
     p.translate(p.width / 2, p.height / 2);
     p.stroke("red");
-    // p.point(0, 0);
-    // p.rotate(p.PI / 2.0);
+    p.point(0, 0); // TODO remove
 
-    const gridVectorsEnds = calculateGridVectorsEnds();
-    const noises = [-20, 50, 10, -60, 20];
-    const gridColors = ["red", "blue", "cyan", "lime", "orange"];
-    const directionCoefficients = calculateDirectionCoefficients(
-      gridVectorsEnds
-    );
-    const space = 50;
+    const drawingCalculations = new DrawingCalculations(p);
+    const drawingUtils = new DrawingUtils(p);
+
+    const sideSize = 10;
+    const gridSpace = 50;
 
     // TODO cover whole canvas
     const xStart = -500 * 0.5; // p.width
     const xEnd = 500 * 0.5;
 
-    directionCoefficients.forEach((directionCoefficient, index) => {
-      const b = space * Math.sqrt(1 + Math.pow(directionCoefficient, 2));
+    const offsets = [-20, 50, 10, -60, 20];
 
-      // TODO cover whole canvas
-      for (let j = -5; j < 6; j++) {
-        p.stroke(gridColors[index]);
-        p.line(
-          xStart + noises[index],
-          xStart * directionCoefficient + j * b + noises[index],
-          xEnd + noises[index],
-          xEnd * directionCoefficient + j * b + noises[index]
-        );
+    const gridFunctions = drawingCalculations.calculateGridLines(
+      offsets,
+      gridSpace
+    );
+    // drawingUtils.drawGridLines(gridFunctions, offsets, xStart, xEnd);
+
+    const intersections: any = drawingCalculations.calculateIntersections(
+      gridFunctions,
+      gridSpace
+    );
+    // drawingUtils.drawIntersectionPoints(intersections);
+
+    const graphNodes = drawingCalculations.calculateNodesVertices(
+      intersections,
+      sideSize
+    );
+    // drawingUtils.drawNodes(graphNodes);
+
+    drawingCalculations.bindNodes(gridFunctions, graphNodes);
+
+    const firstNode = drawingCalculations.findFirstGridNode(graphNodes);
+
+    // TODO translate
+
+    // TODO remove
+    firstNode.translation = p.createVector(0, 0);
+
+    //
+    // drawingCalculations.connectNodesVertices(
+    //   firstNode,
+    //   firstNode.connections[1],
+    //   sideSize
+    // );
+    // drawingUtils.drawNode(firstNode.connections[1]);
+    //
+    // drawingCalculations.connectNodesVertices(
+    //   firstNode.connections[1],
+    //   firstNode.connections[1].connections[1],
+    //   sideSize
+    // );
+    // drawingUtils.drawNode(firstNode.connections[1].connections[1]);
+    //
+    // // /////////////////////////////
+    //
+    // drawingCalculations.connectNodesVertices(
+    //   firstNode.connections[1].connections[1],
+    //   firstNode.connections[1].connections[1].connections[1],
+    //   sideSize
+    // );
+    // drawingUtils.drawNode(
+    //   firstNode.connections[1].connections[1].connections[1]
+    // );
+    //
+    // drawingCalculations.connectNodesVertices(
+    //     firstNode.connections[1].connections[1].connections[1],
+    //     firstNode.connections[1].connections[1].connections[1].connections[1],
+    //     sideSize
+    // );
+    // drawingUtils.drawNode(
+    //     firstNode.connections[1].connections[1].connections[1].connections[1]
+    // );
+
+    await generateTiling(
+      firstNode,
+      drawingCalculations,
+      sideSize,
+      drawingUtils
+    );
+    // drawingUtils.drawNode(firstNode, false, 'red');
+  };
+
+  async function generateTiling(
+    node: Node,
+    drawingCalculations: any,
+    sideSize: number,
+    drawingUtils: any,
+    i = 0,
+    doneIds: number[] = []
+  ) {
+    // if (i === 110) {
+    //   return;
+    // }
+    if (doneIds.includes(node.id)) {
+      return;
+    }
+
+    // console.log('id', node.id)
+    doneIds.push(node.id);
+    // if (node.id === 217 || node.id === 210) { // TODO remove
+    //   // console.log(node)
+    //   drawingUtils.drawNodeOld(node, true )
+    //   drawingUtils.drawNode(node, true);
+    // }
+
+    drawingUtils.drawNode(node);
+
+    node.connections.forEach(async (nextNode) => {
+      // TODO use promise
+      // if (j !== 0) return; // TODO
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+      if (!nextNode.isMoved) {
+        drawingCalculations.connectNodesVertices(node, nextNode, sideSize);
       }
+
+      await generateTiling(
+        nextNode,
+        drawingCalculations,
+        sideSize,
+        drawingUtils,
+        i + 1,
+        doneIds
+      );
     });
-  };
-
-  p.draw = () => {
-    if (p.mouseIsPressed) {
-      if (mode === 1) {
-        drawDiamond(p.mouseX, p.mouseY, 50, 36);
-        p.fill("blue");
-      } else {
-        p.translate(p.mouseX, p.mouseY);
-        p.rotate(p.PI / 8);
-        drawDiamond(0, 0, 50, 72);
-        p.fill("green");
-      }
-    }
-  };
-
-  p.keyPressed = () => {
-    if (p.keyCode === p.LEFT_ARROW) {
-      mode = 1;
-    } else if (p.keyCode === p.RIGHT_ARROW) {
-      mode = 2;
-    }
-  };
-
-  function drawDiamond(x: any, noises: any, size: any, angle: any) {
-    // d is equal to the half of the diagonal
-    const d1 = size * Math.sin(angle * 0.5);
-    const d2 = size * Math.cos(angle * 0.5);
-    p.quad(x, noises - d1, x + d2, noises, x, noises + d1, x - d2, noises);
   }
 };
 
