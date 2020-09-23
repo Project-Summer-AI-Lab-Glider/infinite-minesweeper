@@ -41,14 +41,16 @@ export class DrawingUtils {
     });
   }
 
-  drawNodes(nodes: Node[]) {
-    nodes.forEach((node) => this.drawNode(node));
-  }
-
-  drawNode(node: Node, displayId = false, color = "purple") {
+  drawNode(
+    node: Node,
+    [r, g, b, alpha = 255]: number[],
+    displayId = false,
+    stroke = 0.5
+  ) {
     this.p.push();
-    this.p.stroke(color);
-    this.p.strokeWeight(0.5);
+    this.p.stroke("black");
+    this.p.strokeWeight(stroke);
+    this.p.fill(r, g, b, alpha);
     this.p.quad(
       node.vertices[0].x,
       node.vertices[0].y,
@@ -62,36 +64,11 @@ export class DrawingUtils {
     this.p.pop();
 
     if (displayId) {
+      const size = 12;
       this.p.push();
       this.p.stroke("white");
-      this.p.textSize(3);
-      this.p.text(node.id, node.center.x, node.center.y);
-      this.p.pop();
-    }
-  }
-
-  // TODO remove
-  drawNodeOld(node: Node, displayId = false, color = "orange") {
-    this.p.push();
-    this.p.stroke(color);
-    this.p.strokeWeight(0.5);
-    this.p.quad(
-      node.oldVertices[0].x,
-      node.oldVertices[0].y,
-      node.oldVertices[1].x,
-      node.oldVertices[1].y,
-      node.oldVertices[2].x,
-      node.oldVertices[2].y,
-      node.oldVertices[3].x,
-      node.oldVertices[3].y
-    );
-    this.p.pop();
-
-    if (displayId) {
-      this.p.push();
-      this.p.stroke("white");
-      this.p.textSize(3);
-      this.p.text(node.id, node.center.x, node.center.y);
+      this.p.textSize(size);
+      this.p.text(node.id, node.center.x - size, node.center.y + size * 0.5);
       this.p.pop();
     }
   }

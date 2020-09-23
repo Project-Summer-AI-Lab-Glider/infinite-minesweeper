@@ -4,26 +4,31 @@ import { DrawingUtils } from "./DrawingUtils";
 import { Node } from "../models/Node";
 
 const drawingSketch = (p: p5) => {
+  const drawingCalculations = new DrawingCalculations(p);
+  const drawingUtils = new DrawingUtils(p);
+
+  let globalNodes: Node[];
+
   p.setup = async () => {
-    const canvas = p.createCanvas(400, 400);
+    const canvasDiv = document.getElementById("canvas-parent");
+    const width = canvasDiv!.offsetWidth;
+    const height = canvasDiv!.offsetHeight;
+    const canvas = p.createCanvas(width, height);
     canvas.parent("canvas");
+
     p.rectMode(p.CENTER);
-
     p.translate(p.width / 2, p.height / 2);
-    p.stroke("red");
-    p.point(0, 0); // TODO remove
 
-    const drawingCalculations = new DrawingCalculations(p);
-    const drawingUtils = new DrawingUtils(p);
+    const sideSize = 50;
+    const gridSpace = 1;
 
-    const sideSize = 10;
-    const gridSpace = 50;
-
-    // TODO cover whole canvas
-    const xStart = -500 * 0.5; // p.width
-    const xEnd = 500 * 0.5;
-
-    const offsets = [-20, 50, 10, -60, 20];
+    // sum must be equal 0
+    // each must be (-1, 1)
+    // all must be unique
+    // offset y0 = 0
+    // 2 + 5 sum cant be integer
+    // 3 + 4 sum cant be integer
+    const offsets = [-0.2, 0.6, -0.6, -0.5, 0.7];
 
     const gridFunctions = drawingCalculations.calculateGridLines(
       offsets,
@@ -46,54 +51,64 @@ const drawingSketch = (p: p5) => {
     drawingCalculations.bindNodes(gridFunctions, graphNodes);
 
     const firstNode = drawingCalculations.findFirstGridNode(graphNodes);
-
-    // TODO translate
-
-    // TODO remove
+    p.translate(-firstNode.center.x, -firstNode.center.y);
     firstNode.translation = p.createVector(0, 0);
 
-    //
-    // drawingCalculations.connectNodesVertices(
-    //   firstNode,
-    //   firstNode.connections[1],
-    //   sideSize
-    // );
-    // drawingUtils.drawNode(firstNode.connections[1]);
-    //
-    // drawingCalculations.connectNodesVertices(
-    //   firstNode.connections[1],
-    //   firstNode.connections[1].connections[1],
-    //   sideSize
-    // );
-    // drawingUtils.drawNode(firstNode.connections[1].connections[1]);
-    //
-    // // /////////////////////////////
-    //
-    // drawingCalculations.connectNodesVertices(
-    //   firstNode.connections[1].connections[1],
-    //   firstNode.connections[1].connections[1].connections[1],
-    //   sideSize
-    // );
-    // drawingUtils.drawNode(
-    //   firstNode.connections[1].connections[1].connections[1]
-    // );
-    //
-    // drawingCalculations.connectNodesVertices(
-    //     firstNode.connections[1].connections[1].connections[1],
-    //     firstNode.connections[1].connections[1].connections[1].connections[1],
-    //     sideSize
-    // );
-    // drawingUtils.drawNode(
-    //     firstNode.connections[1].connections[1].connections[1].connections[1]
-    // );
-
+    const doneIds: number[] = [];
     await generateTiling(
       firstNode,
       drawingCalculations,
       sideSize,
-      drawingUtils
+      drawingUtils,
+      doneIds
     );
-    // drawingUtils.drawNode(firstNode, false, 'red');
+
+    ///////////////////////////////
+    // Connect vertices
+
+    graphNodes.forEach((node) => {
+      node.vertices.forEach((v) => {
+        graphNodes.forEach((node2) => {
+          if (node.id === node2.id) return;
+          if (node.connections.find((n) => n.id === node2.id)) return;
+
+          node2.vertices.forEach((v2) => {
+            const accuracy = 100;
+            const x1 = Math.round(v.x * accuracy);
+            const x2 = Math.round(v2.x * accuracy);
+            const y1 = Math.round(v.y * accuracy);
+            const y2 = Math.round(v2.y * accuracy);
+
+            if (x1 === x2 && y1 === y2) {
+              node.connections.push(node2);
+              node2.connections.push(node);
+            }
+          });
+        });
+      });
+    });
+
+    globalNodes = graphNodes;
+    console.log("moved");
+
+    // small i=5
+    // medium i=10
+    // large i=20
+
+    // TODO send graph to backend
+    const graph = doneIds.map((id) => {
+      const node = graphNodes.find((node) => node.id === id);
+      return {
+        id,
+        value: -2,
+        connections: node!.connections
+          .filter((connection) => doneIds.includes(connection.id))
+          .map((connection) => connection.id),
+      };
+    });
+    // console.log(firstNode.id);
+    // console.log(JSON.stringify(graph));
+    // console.log(graph);
   };
 
   async function generateTiling(
@@ -101,29 +116,26 @@ const drawingSketch = (p: p5) => {
     drawingCalculations: any,
     sideSize: number,
     drawingUtils: any,
-    i = 0,
-    doneIds: number[] = []
+    doneIds: number[],
+    i = 0
   ) {
-    // if (i === 110) {
-    //   return;
-    // }
+    if (i === 10) {
+      // TODO boundary condition
+      return;
+    }
     if (doneIds.includes(node.id)) {
       return;
     }
-
-    // console.log('id', node.id)
     doneIds.push(node.id);
-    // if (node.id === 217 || node.id === 210) { // TODO remove
-    //   // console.log(node)
-    //   drawingUtils.drawNodeOld(node, true )
-    //   drawingUtils.drawNode(node, true);
-    // }
 
-    drawingUtils.drawNode(node);
+    const angle = Math.round(node.angle); // TODO move
+    let color = [0, 133, 11];
+    if (angle === 72) {
+      color = [96, 138, 252];
+    }
+    drawingUtils.drawNode(node, color);
 
-    node.connections.forEach(async (nextNode) => {
-      // TODO use promise
-      // if (j !== 0) return; // TODO
+    const p = node.connections.map(async (nextNode) => {
       await new Promise((resolve) => setTimeout(resolve, 200));
 
       if (!nextNode.isMoved) {
@@ -135,11 +147,30 @@ const drawingSketch = (p: p5) => {
         drawingCalculations,
         sideSize,
         drawingUtils,
-        i + 1,
-        doneIds
+        doneIds,
+        i + 1
       );
     });
+    await Promise.all(p);
+
+    return doneIds;
   }
+
+  p.mouseClicked = () => {
+    const clickPoint = {
+      x: p.mouseX - p.width / 2,
+      y: p.mouseY - p.height / 2,
+    };
+
+    const node = globalNodes.find(
+      (node) =>
+        DrawingCalculations.isPointInsidePolygon(clickPoint, node.vertices) &&
+        node.isMoved
+    );
+    if (node) {
+      drawingUtils.drawNode(node, [0, 0, 0, 0], true, 0);
+    }
+  };
 };
 
 export { drawingSketch };
