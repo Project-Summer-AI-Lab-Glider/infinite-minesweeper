@@ -1,25 +1,18 @@
 import React from "react";
 import { GameBoard } from "../GameBoard/GameBoard";
-import "bootstrap/dist/css/bootstrap.css";
 
 function App() {
   return (
-    <div className="container">
-      <div className="row d-flex justify-content-center">
-        <h1> Minesweeper </h1>
-      </div>
+    <div className="container d-flex flex-column justify-content-center vh-100">
+      <span className="text-center" style={{ marginBottom: "2%" }}>
+        <h1>Minesweeper</h1>
+      </span>
 
-      <div className="row">
-        <div className="col" />
-
-        <div
-          className="col canvas d-flex justify-content-center"
-          style={{ borderColor: "red", border: "solid" }}
-        >
-          <GameBoard />
-        </div>
-
-        <div className="col" />
+      <div
+        className="h-75 w-100"
+        style={{ color: "red", border: "solid", borderWidth: 2 }}
+      >
+        <GameBoard />
       </div>
     </div>
   );

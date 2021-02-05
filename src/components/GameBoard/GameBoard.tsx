@@ -9,8 +9,8 @@ export function GameBoard() {
   });
 
   return (
-    <div>
-      <div id="canvas" />
+    <div className="w-100 h-100" id="canvas-parent">
+      <span id="canvas" />
     </div>
   );
 }

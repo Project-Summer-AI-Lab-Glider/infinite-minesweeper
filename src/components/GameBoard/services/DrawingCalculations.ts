@@ -10,19 +10,20 @@ export class DrawingCalculations {
   constructor(private readonly p: p5) {}
 
   calculateGridLines(offsets: number[], gridSpace: number): LinearFunction[][] {
-    const gridSlopes = this.calculateGridSlopes();
+    const gridSlopes = this._calculateGridSlopes();
 
     return gridSlopes.map((a, i) => {
       const b = gridSpace * Math.sqrt(1 + Math.pow(a, 2));
 
-      return range(-10, 10).map((j) => {
-        const yTranslation = j * b + offsets[i];
-        return new LinearFunction(a, b, offsets[i], yTranslation);
+      // TODO set range
+      return range(-11, 11).map((j) => {
+        const yT = j * b + offsets[i];
+        return new LinearFunction(a, b, offsets[i], yT);
       });
     });
   }
 
-  private calculateGridSlopes(): number[] {
+  private _calculateGridSlopes(): number[] {
     return range(5)
       .map(
         (i): Point => {
@@ -61,21 +62,6 @@ export class DrawingCalculations {
             const intersectionY =
               Math.round(intersection.y * precision) / precision;
 
-            // TODO get only visible intersections
-            // if (
-            //   intersectionX < -this.p.width / 2 ||
-            //   intersectionX > this.p.width / 2
-            // ) {
-            //   continue;
-            // }
-            //
-            // if (
-            //   intersectionY < -this.p.height / 2 ||
-            //   intersectionY > this.p.height / 2
-            // ) {
-            //   continue;
-            // }
-
             const existingIntersection = intersections.find(
               (x: any) => x.x === intersectionX && x.y === intersectionY
             );
@@ -88,7 +74,6 @@ export class DrawingCalculations {
               id,
               x: intersectionX,
               y: intersectionY,
-              diamondAngle: f1.calculateSlope(f2), // TODO remove
               f1: f1,
               f2: f2,
             });
@@ -121,12 +106,9 @@ export class DrawingCalculations {
     sideSize: number
   ): Node[] {
     return intersections.map((i, index: number) => {
-      // TODO whether required
-      // if (isNaN(i.x) || isNaN(i.y)) {
-      //     return;
-      // }
+      const diamondAngle = i.f1.calculateSlope(i.f2);
 
-      const xT = 10;
+      const xT = 100; // TODO should be any int but doesnt work for 10
       const y12 = i.f1.evaluate(i.x + xT);
       const v1 = this.p.createVector(xT, y12 - i.y);
 
@@ -140,9 +122,9 @@ export class DrawingCalculations {
       v1.normalize();
 
       const d1 =
-        2 * sideSize * Math.cos(((i.diamondAngle * Math.PI) / 180) * 0.5); // longer
+        2 * sideSize * Math.cos(((diamondAngle * Math.PI) / 180) * 0.5); // longer
       const d2 =
-        2 * sideSize * Math.sin(((i.diamondAngle * Math.PI) / 180) * 0.5);
+        2 * sideSize * Math.sin(((diamondAngle * Math.PI) / 180) * 0.5);
 
       const p1 = {
         x: i.x,
@@ -200,7 +182,7 @@ export class DrawingCalculations {
         vertices: diamondVertices,
         oldVertices: cloneDeep(diamondVertices),
         connections: [],
-        angle: i.diamondAngle,
+        angle: diamondAngle,
         isMoved: false,
       };
     });
@@ -371,8 +353,7 @@ export class DrawingCalculations {
 
   private getClosestPointsTranslation(
     vertices1: Point[],
-    vertices2: Point[],
-    skip = 0
+    vertices2: Point[]
   ): p5.Vector {
     const segments: Segment[] = [];
     vertices1.forEach((p1) => {
@@ -383,11 +364,26 @@ export class DrawingCalculations {
     });
 
     segments.sort((a, b) => (a.length < b.length ? -1 : 1));
-    range(skip).forEach(() => segments.shift());
 
     const xT = segments[0].p1.x - segments[0].p2.x;
     const yT = segments[0].p1.y - segments[0].p2.y;
 
     return this.p.createVector(xT, yT);
+  }
+
+  static isPointInsidePolygon(point: Point, vertices: Point[]): boolean {
+    let isInside = false;
+    for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+      const intersect =
+        vertices[i].y > point.y !== vertices[j].y > point.y &&
+        point.x <
+          ((vertices[j].x - vertices[i].x) * (point.y - vertices[i].y)) /
+            (vertices[j].y - vertices[i].y) +
+            vertices[i].x;
+
+      if (intersect) isInside = !isInside;
+    }
+
+    return isInside;
   }
 }
